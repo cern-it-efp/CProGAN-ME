@@ -61,9 +61,9 @@ if bmark_gpus == 1:
     desc += '-preset-v2-1gpu'; num_gpus = 1; sched.minibatch_base = 4; sched.minibatch_dict = {4: 64, 8: 64, 16: 64, 32: 32, 64: 16, 128: 8, 256: 4, 512: 2}; sched.G_lrate_dict = {1024: 0.0015}; sched.D_lrate_dict = EasyDict(sched.G_lrate_dict); train.total_kimg = bmark_kimg # 12000
 elif bmark_gpus == 2:
     desc += '-preset-v2-2gpus'; num_gpus = 2; D.mbstd_group_size = 16; sched.minibatch_base = 16; sched.minibatch_dict = {4: 256, 8: 256, 16: 128, 32: 64, 64: 32, 128: 16, 256: 8}; sched.G_lrate_dict = {512: 0.0015, 1024: 0.002}; sched.D_lrate_dict = EasyDict(sched.G_lrate_dict);sched.lod_training_kimg = 300; sched.lod_transition_kimg = 1500; train.total_kimg = bmark_kimg # 10000
-elif bmark_gpus == 3:
+elif bmark_gpus == 4:
     desc += '-preset-v2-4gpus'; num_gpus = 4; sched.minibatch_base = 16; sched.minibatch_dict = {4: 512, 8: 256, 16: 128, 32: 64, 64: 32, 128: 16}; sched.G_lrate_dict = {256: 0.0015, 512: 0.002, 1024: 0.003}; sched.D_lrate_dict = EasyDict(sched.G_lrate_dict); sched.lod_training_kimg = 300; sched.lod_transition_kimg = 1500; train.total_kimg = bmark_kimg # 12000
-else bmark_gpus == 4:
+else:
     desc += '-preset-v2-8gpus'; num_gpus = 8; sched.minibatch_base = 32; sched.minibatch_dict = {4: 512, 8: 256, 16: 128, 32: 64, 64: 32}; sched.G_lrate_dict = {128: 0.0015, 256: 0.002, 512: 0.003, 1024: 0.003}; sched.D_lrate_dict = EasyDict(sched.G_lrate_dict); train.total_kimg = bmark_kimg # 12000
 
 # Numerical precision (choose one).
