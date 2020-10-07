@@ -8,7 +8,8 @@
 #----------------------------------------------------------------------------
 # Convenience class that behaves exactly like dict(), but allows accessing
 # the keys and values using the attribute syntax, i.e., "mydict.key = value".
-
+import numpy as np
+import tensorflow as tf
 class EasyDict(dict):
     def __init__(self, *args, **kwargs): super().__init__(*args, **kwargs)
     def __getattr__(self, name): return self[name]
@@ -18,8 +19,8 @@ class EasyDict(dict):
 #----------------------------------------------------------------------------
 # Paths.
 
-data_dir = '/scratch/CelebA/'
-result_dir = '/home/casparl/NKI/results/'
+data_dir ='/afs/cern.ch/work/y/yboget/tfrecord256A'
+result_dir ='/afs/cern.ch/work/y/yboget/public/results_try'
 
 #----------------------------------------------------------------------------
 # TensorFlow options.
@@ -29,7 +30,7 @@ env = EasyDict()        # Environment variables, set by the main program in trai
 
 tf_config['graph_options.place_pruned_graph']   = True      # False (default) = Check that all ops are available on the designated device. True = Skip the check for ops that are not used.
 #tf_config['gpu_options.allow_growth']          = False     # False (default) = Allocate all GPU memory at the beginning. True = Allocate only as much GPU memory as needed.
-#env.CUDA_VISIBLE_DEVICES                       = '0'       # Unspecified (default) = Use all available GPUs. List of ints = CUDA device numbers to use.
+env.CUDA_VISIBLE_DEVICES                       = '0, 1, 2, 3'       # Unspecified (default) = Use all available GPUs. List of ints = CUDA device numbers to use.
 env.TF_CPP_MIN_LOG_LEVEL                        = '1'       # 0 (default) = Print all available debug info from TensorFlow. 1 = Print warnings and errors, but disable debug info.
 
 #----------------------------------------------------------------------------
@@ -41,23 +42,27 @@ random_seed = 1000                                          # Global random seed
 dataset     = EasyDict()                                    # Options for dataset.load_dataset().
 train       = EasyDict(func='train.train_progressive_gan')  # Options for main training func.
 G           = EasyDict(func='networks.G_paper')             # Options for generator network.
-D           = EasyDict(func='networks.D_paper')             # Options for discriminator network.
+D           = EasyDict(func='networks.D_paper')
 G_opt       = EasyDict(beta1=0.0, beta2=0.99, epsilon=1e-8) # Options for generator optimizer.
-D_opt       = EasyDict(beta1=0.0, beta2=0.99, epsilon=1e-8) # Options for discriminator optimizer.
+D_opt       = EasyDict(beta1=0.0, beta2=0.99, epsilon=1e-8) 
 G_loss      = EasyDict(func='loss.G_wgan_acgan')            # Options for generator loss.
 D_loss      = EasyDict(func='loss.D_wgangp_acgan')          # Options for discriminator loss.
-sched       = EasyDict()                                    # Options for train.TrainingSchedule.
+sched       = EasyDict(lod_initial_resolution = 32)          # Options for train.TrainingSchedule.
 grid        = EasyDict(size='1080p', layout='random')       # Options for train.setup_snapshot_image_grid().
 
+
+
+
+
 # Dataset (choose one).
-desc += '-celebahq';            dataset = EasyDict(tfrecord_dir='CelebAHQ_tfrecord'); train.mirror_augment = True
+#desc += '-celebahq';            dataset = EasyDict(tfrecord_dir='CelebAHQ_tfrecord'); train.mirror_augment = True
 #desc += '-celeba';              dataset = EasyDict(tfrecord_dir='celeba'); train.mirror_augment = True
 #desc += '-cifar10';             dataset = EasyDict(tfrecord_dir='cifar10')
 #desc += '-cifar100';            dataset = EasyDict(tfrecord_dir='cifar100')
 #desc += '-svhn';                dataset = EasyDict(tfrecord_dir='svhn')
 #desc += '-mnist';               dataset = EasyDict(tfrecord_dir='mnist')
 #desc += '-mnistrgb';            dataset = EasyDict(tfrecord_dir='mnistrgb')
-#desc += '-syn1024rgb';          dataset = EasyDict(class_name='dataset.SyntheticDataset', resolution=1024, num_channels=3)
+desc += '-syn256rgb_conditional';          dataset = EasyDict(tfrecord_dir= data_dir)
 #desc += '-lsun-airplane';       dataset = EasyDict(tfrecord_dir='lsun-airplane-100k');       train.mirror_augment = True
 #desc += '-lsun-bedroom';        dataset = EasyDict(tfrecord_dir='lsun-bedroom-100k');        train.mirror_augment = True
 #desc += '-lsun-bicycle';        dataset = EasyDict(tfrecord_dir='lsun-bicycle-100k');        train.mirror_augment = True
@@ -96,15 +101,15 @@ desc += '-celebahq';            dataset = EasyDict(tfrecord_dir='CelebAHQ_tfreco
 #desc += '-grpc'; grid.layout = 'row_per_class'
 
 # Config presets (choose one).
-#desc += '-preset-v1-1gpu'; num_gpus = 1; D.mbstd_group_size = 16; sched.minibatch_base = 16; sched.minibatch_dict = {256: 14, 512: 6, 1024: 3}; sched.lod_training_kimg = 800; sched.lod_transition_kimg = 800; train.total_kimg = 19000
-# desc += '-preset-v2-1gpu'; num_gpus = 1; sched.minibatch_base = 4; sched.minibatch_dict = {4: 64, 8: 64, 16: 64, 32: 32, 64: 16, 128: 8, 256: 4, 512: 2}; sched.G_lrate_dict = {1024: 0.0015}; sched.D_lrate_dict = EasyDict(sched.G_lrate_dict); train.total_kimg = 12000
-#desc += '-preset-v2-2gpus'; num_gpus = 2; sched.minibatch_base = 8; sched.minibatch_dict = {4: 256, 8: 256, 16: 128, 32: 64, 64: 32, 128: 16, 256: 8}; sched.G_lrate_dict = {512: 0.0015, 1024: 0.002}; sched.D_lrate_dict = EasyDict(sched.G_lrate_dict); train.total_kimg = 12000
-desc += '-preset-v2-4gpus'; num_gpus = 4; sched.minibatch_base = 16; sched.minibatch_dict = {4: 512, 8: 256, 16: 128, 32: 64, 64: 32, 128: 16}; sched.G_lrate_dict = {256: 0.0015, 512: 0.002, 1024: 0.003}; sched.D_lrate_dict = EasyDict(sched.G_lrate_dict); train.total_kimg = 12000
+#desc += '-preset-v1-1gpu'; num_gpus = 1; D.mbstd_group_size = 16; sched.minibatch_base = 16; sched.minibatch_dict = {256: 14, 512: 6, 1024: 3}; sched.lod_training_kimg = 150; sched.lod_transition_kimg = 150; train.total_kimg = 5000
+#desc += '-preset-v2-1gpu'; num_gpus = 1; sched.minibatch_base = 4; sched.minibatch_dict = {4: 64, 8: 64, 16: 64, 32: 32, 64: 16, 128: 8, 256: 4, 512: 2}; sched.G_lrate_dict = {1024: 0.0015}; sched.D_lrate_dict = EasyDict(sched.G_lrate_dict); train.total_kimg = 12000
+#desc += '-preset-v2-2gpus'; num_gpus = 2; D.mbstd_group_size = 16; sched.minibatch_base = 16; sched.minibatch_dict = {4: 256, 8: 256, 16: 128, 32: 64, 64: 32, 128: 16, 256: 8}; sched.G_lrate_dict = {512: 0.0015, 1024: 0.002}; sched.D_lrate_dict = EasyDict(sched.G_lrate_dict);sched.lod_training_kimg = 300; sched.lod_transition_kimg = 1500; train.total_kimg = 10000
+desc += '-preset-v2-4gpus'; num_gpus = 4; sched.minibatch_base = 16; sched.minibatch_dict = {4: 512, 8: 256, 16: 128, 32: 64, 64: 32, 128: 16}; sched.G_lrate_dict = {256: 0.0015, 512: 0.002, 1024: 0.003}; sched.D_lrate_dict = EasyDict(sched.G_lrate_dict); sched.lod_training_kimg = 300; sched.lod_transition_kimg = 1500; train.total_kimg = 12000
 #desc += '-preset-v2-8gpus'; num_gpus = 8; sched.minibatch_base = 32; sched.minibatch_dict = {4: 512, 8: 256, 16: 128, 32: 64, 64: 32}; sched.G_lrate_dict = {128: 0.0015, 256: 0.002, 512: 0.003, 1024: 0.003}; sched.D_lrate_dict = EasyDict(sched.G_lrate_dict); train.total_kimg = 12000
 
 # Numerical precision (choose one).
 desc += '-fp32'; sched.max_minibatch_per_gpu = {256: 8, 512: 4, 1024: 2}
-#desc += '-fp16'; G.dtype = 'float16'; D.dtype = 'float16'; G.pixelnorm_epsilon=1e-4; G_opt.use_loss_scaling = True; D_opt.use_loss_scaling = True; sched.max_minibatch_per_gpu = {512: 16, 1024: 8}
+#desc += '-fp16'; G.dtype = 'float16'; D.dtype = 'float16'; G.pixelnorm_epsilon=1e-4; G_opt.use_loss_scaling = True; D_opt.use_loss_scaling = True; sched.max_minibatch_per_gpu = {}
 
 # Disable individual features.
 #desc += '-nogrowing'; sched.lod_initial_resolution = 1024; sched.lod_training_kimg = 0; sched.lod_transition_kimg = 0; train.total_kimg = 10000
@@ -118,7 +123,7 @@ desc += '-fp32'; sched.max_minibatch_per_gpu = {256: 8, 512: 4, 1024: 2}
 # Special modes.
 #desc += '-BENCHMARK'; sched.lod_initial_resolution = 4; sched.lod_training_kimg = 3; sched.lod_transition_kimg = 3; train.total_kimg = (8*2+1)*3; sched.tick_kimg_base = 1; sched.tick_kimg_dict = {}; train.image_snapshot_ticks = 1000; train.network_snapshot_ticks = 1000
 #desc += '-BENCHMARK0'; sched.lod_initial_resolution = 1024; train.total_kimg = 10; sched.tick_kimg_base = 1; sched.tick_kimg_dict = {}; train.image_snapshot_ticks = 1000; train.network_snapshot_ticks = 1000
-#desc += '-VERBOSE'; sched.tick_kimg_base = 1; sched.tick_kimg_dict = {}; train.image_snapshot_ticks = 1; train.network_snapshot_ticks = 100
+desc += '-VERBOSE'; sched.tick_kimg_base = 1; sched.tick_kimg_dict = {}; train.image_snapshot_ticks = 10; train.network_snapshot_ticks = 140;  train.resume_run_id = 15; train.resume_kimg = 6163
 #desc += '-GRAPH'; train.save_tf_graph = True
 #desc += '-HIST'; train.save_weight_histograms = True
 
@@ -127,6 +132,7 @@ desc += '-fp32'; sched.max_minibatch_per_gpu = {256: 8, 512: 4, 1024: 2}
 # To run, uncomment the appropriate line and launch train.py.
 
 #train = EasyDict(func='util_scripts.generate_fake_images', run_id=23, num_pngs=1000); num_gpus = 1; desc = 'fake-images-' + str(train.run_id)
+train = EasyDict(func='util_scripts.generate_fake_images_cond2', run_id=16, x=7, y=10, num_pngs=1000); num_gpus = 1; desc = 'fake-images-' + str(train.run_id)
 #train = EasyDict(func='util_scripts.generate_fake_images', run_id=23, grid_size=[15,8], num_pngs=10, image_shrink=4); num_gpus = 1; desc = 'fake-grids-' + str(train.run_id)
 #train = EasyDict(func='util_scripts.generate_interpolation_video', run_id=23, grid_size=[1,1], duration_sec=60.0, smoothing_sec=1.0); num_gpus = 1; desc = 'interpolation-video-' + str(train.run_id)
 #train = EasyDict(func='util_scripts.generate_training_video', run_id=23, duration_sec=20.0); num_gpus = 1; desc = 'training-video-' + str(train.run_id)

@@ -161,12 +161,12 @@ def train_progressive_gan(
             G = tfutil.Network('G', num_channels=training_set.shape[0], resolution=training_set.shape[1], **config.G)
             D = tfutil.Network('D', num_channels=training_set.shape[0], resolution=training_set.shape[1],  **config.D)
 
-            
-                                    
+
+
             Gs = G.clone('Gs')
-           
+
         Gs_update_op = Gs.setup_as_moving_average_of(G, beta=G_smoothing)
-    G.print_layers(); D.print_layers(); 
+    G.print_layers(); D.print_layers();
 
     print('Building TensorFlow graph...')
     with tf.name_scope('Inputs'):
@@ -196,35 +196,40 @@ def train_progressive_gan(
             D_opt.register_gradients(tf.reduce_mean(D_loss), D_gpu.trainables)
     G_train_op = G_opt.apply_updates()
     D_train_op = D_opt.apply_updates()
- 
+
     print('Setting up snapshot image grid...')
     grid_size, grid_reals, grid_labels, grid_latents = setup_snapshot_image_grid(G, training_set, **config.grid)
     sched = TrainingSchedule(total_kimg * 1000, training_set, **config.sched)
-    
+
     size= int(128)
-                
+
     real1= grid_reals[:,:, :(size),:(size)]
     real2= grid_reals[:,:, (size):,:(size)]
     real3= grid_reals[:,:, :(size),(size):]
+
     real1=(real1.astype(np.float32)-127.5)/127.5
     real2=(real2.astype(np.float32)-127.5)/127.5
     real3=(real3.astype(np.float32)-127.5)/127.5
     print('real3 shape' + str(real3.shape))
-    latents = np.random.randn(120, 3, 128, 128)
+
+    latents = np.random.randn(1024, 1, 32, 0)
     left = np.concatenate((real1, real2), axis=2)
     right = np.concatenate((real3, latents), axis=2)
+
+
+    print("ILLO LEFT: " + str(left.shape))
+    print("ILLO RIGHT: " + str(right.shape))
+
     lat_and_cond = np.concatenate((left, right), axis=3)
 
- 
-   
     fake_images_out_small = Gs.run(lat_and_cond, grid_labels, minibatch_size=120)
 
     #print('Real3: '+ str(real3))
-    fake_image_out_right =np.concatenate((real3, fake_images_out_small), axis=2)                
+    fake_image_out_right =np.concatenate((real3, fake_images_out_small), axis=2)
     fake_image_out_left = np.concatenate((real1, real2), axis=2)
     grid_fakes = np.concatenate((fake_image_out_left, fake_image_out_right), axis=3)
-    
-    
+
+
 
 
     print('Setting up result dir...')
@@ -290,32 +295,37 @@ def train_progressive_gan(
             # Save snapshots.
             if cur_tick % image_snapshot_ticks == 0 or done:
                 size= int(128)
-                          
+
                 real1= grid_reals[:,:, :(size),:(size)]
                 real2= grid_reals[:,:, (size):,:(size)]
                 real3= grid_reals[:,:, :(size),(size):]
                 real1=(real1.astype(np.float32)-127)/128
                 real2=(real2.astype(np.float32)-127)/128
                 real3=(real3.astype(np.float32)-127)/128
-            
-                latents = np.random.randn(120, 3, 128, 128)
+
+                latents = np.random.randn(1024, 1, 32, 0)
                 left = np.concatenate((real1, real2), axis=2)
                 right = np.concatenate((real3, latents), axis=2)
+
+                print("ILLO LEFT: " + str(left.shape))
+                print("ILLO RIGHT: " + str(right.shape))
+
+
                 lat_and_cond = np.concatenate((left, right), axis=3)
-                
-               
-                
+
+
+
                 fake_images_out_small = Gs.run(lat_and_cond, grid_labels, minibatch_size=sched.minibatch//config.num_gpus)
                 fake_image_out_right =np.concatenate((real3, fake_images_out_small), axis=2)
-                
+
                 fake_image_out_left = np.concatenate((real1, real2), axis=2)
                 grid_fakes = np.concatenate((fake_image_out_left, fake_image_out_right), axis=3)
                 misc.save_image_grid(grid_fakes, os.path.join(result_subdir, 'fakes%06d.png' % (cur_nimg // 1000)), drange=drange_net, grid_size=grid_size)
-               
-              
 
-                
-                
+
+
+
+
             if cur_tick % network_snapshot_ticks == 0 or done:
                 misc.save_pkl((G, D, Gs), os.path.join(result_subdir, 'network-snapshot-%06d.pkl' % (cur_nimg // 1000)))
 
@@ -323,9 +333,11 @@ def train_progressive_gan(
             tick_start_time = time.time()
 
     # Write final results.
-    misc.save_pkl((G, D, Gs, E1, E2, E3, E), os.path.join(result_subdir, 'network-final.pkl'))
+    #misc.save_pkl((G, D, Gs, E1, E2, E3, E), os.path.join(result_subdir, 'network-final.pkl')) # Original: 'E1' not defined
+    misc.save_pkl((G, D, Gs), os.path.join(result_subdir, 'network-final.pkl')) # karras'
     summary_log.close()
     open(os.path.join(result_subdir, '_training-done.txt'), 'wt').close()
+
 
 #----------------------------------------------------------------------------
 # Main entry point.
