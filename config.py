@@ -55,8 +55,8 @@ grid        = EasyDict(size='1080p', layout='random')       # Options for train.
 desc += '-syn256rgb_conditional';          dataset = EasyDict(tfrecord_dir= data_dir)
 
 # Config presets
-bmark_gpus = os.environ['BMARK_GPUS']
-bmark_kimg = os.environ['BMARK_KIMG']
+bmark_gpus = int(os.environ['BMARK_GPUS'])
+bmark_kimg = int(os.environ['BMARK_KIMG'])
 
 if bmark_gpus == 1:
     desc += '-preset-v2-1gpu'; num_gpus = 1; sched.minibatch_base = 4; sched.minibatch_dict = {4: 64, 8: 64, 16: 64, 32: 32, 64: 16, 128: 8, 256: 4, 512: 2}; sched.G_lrate_dict = {1024: 0.0015}; sched.D_lrate_dict = EasyDict(sched.G_lrate_dict); train.total_kimg = bmark_kimg # 12000
