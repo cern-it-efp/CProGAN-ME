@@ -10,6 +10,7 @@
 # the keys and values using the attribute syntax, i.e., "mydict.key = value".
 import numpy as np
 import tensorflow as tf
+import os
 class EasyDict(dict):
     def __init__(self, *args, **kwargs): super().__init__(*args, **kwargs)
     def __getattr__(self, name): return self[name]
