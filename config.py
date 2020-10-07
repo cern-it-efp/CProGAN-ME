@@ -73,6 +73,6 @@ desc += '-fp32'; sched.max_minibatch_per_gpu = {256: 8, 512: 4, 1024: 2}
 
 # Special modes.
 #desc += '-VERBOSE'; sched.tick_kimg_base = 1; sched.tick_kimg_dict = {}; train.image_snapshot_ticks = 10; train.network_snapshot_ticks = 140;  train.resume_run_id = 15; train.resume_kimg = 6163
-desc += '-VERBOSE'; sched.tick_kimg_base = 1; sched.tick_kimg_dict = {}; train.image_snapshot_ticks = 1; train.network_snapshot_ticks = 100 # This is from karras' pro GAN, note it does not have resume_run_id
+#desc += '-VERBOSE'; sched.tick_kimg_base = 1; sched.tick_kimg_dict = {}; train.image_snapshot_ticks = 1; train.network_snapshot_ticks = 100 # This is from karras' pro GAN, note it does not have resume_run_id
 #desc += '-GRAPH'; train.save_tf_graph = True
-desc += '-HIST'; train.save_weight_histograms = True
+#desc += '-HIST'; train.save_weight_histograms = True
