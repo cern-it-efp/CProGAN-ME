@@ -206,21 +206,16 @@ def train_progressive_gan(
     real1= grid_reals[:,:, :(size),:(size)]
     real2= grid_reals[:,:, (size):,:(size)]
     real3= grid_reals[:,:, :(size),(size):]
-
     real1=(real1.astype(np.float32)-127.5)/127.5
     real2=(real2.astype(np.float32)-127.5)/127.5
     real3=(real3.astype(np.float32)-127.5)/127.5
     print('real3 shape' + str(real3.shape))
-
-    latents = np.random.randn(1024, 1, 32, 0)
+    latents = np.random.randn(120, 3, 128, 128)
     left = np.concatenate((real1, real2), axis=2)
     right = np.concatenate((real3, latents), axis=2)
-
-
-    print("ILLO LEFT: " + str(left.shape))
-    print("ILLO RIGHT: " + str(right.shape))
-
     lat_and_cond = np.concatenate((left, right), axis=3)
+
+
 
     fake_images_out_small = Gs.run(lat_and_cond, grid_labels, minibatch_size=120)
 
@@ -303,14 +298,9 @@ def train_progressive_gan(
                 real2=(real2.astype(np.float32)-127)/128
                 real3=(real3.astype(np.float32)-127)/128
 
-                latents = np.random.randn(1024, 1, 32, 0)
+                latents = np.random.randn(120, 3, 128, 128)
                 left = np.concatenate((real1, real2), axis=2)
                 right = np.concatenate((real3, latents), axis=2)
-
-                print("ILLO LEFT: " + str(left.shape))
-                print("ILLO RIGHT: " + str(right.shape))
-
-
                 lat_and_cond = np.concatenate((left, right), axis=3)
 
 
@@ -333,11 +323,9 @@ def train_progressive_gan(
             tick_start_time = time.time()
 
     # Write final results.
-    #misc.save_pkl((G, D, Gs, E1, E2, E3, E), os.path.join(result_subdir, 'network-final.pkl')) # Original: 'E1' not defined
-    misc.save_pkl((G, D, Gs), os.path.join(result_subdir, 'network-final.pkl')) # karras'
+    misc.save_pkl((G, D, Gs), os.path.join(result_subdir, 'network-final.pkl'))
     summary_log.close()
     open(os.path.join(result_subdir, '_training-done.txt'), 'wt').close()
-
 
 #----------------------------------------------------------------------------
 # Main entry point.
